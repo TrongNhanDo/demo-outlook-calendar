@@ -49,6 +49,51 @@ const GetCalendarEvent: FC = () => {
     }
   });
 
+  useEffect(() => {
+    instance
+      .acquireTokenSilent(accessTokenRequest)
+      .then((accessTokenResponse) => {
+        // Acquire token silent success
+        const accessToken = accessTokenResponse.accessToken;
+        // Call your API with token
+        axios
+          .get('https://graph.microsoft.com/v1.0/me/calendar', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              // Prefer: 'outlook.timezone="Indochina Time"',
+            },
+          })
+          .then((response) => {
+            if (response && response.data && response.data.id) {
+              localStorage.setItem('calendarId', response.data.id);
+            }
+          });
+      })
+      .catch((error) => {
+        if (error instanceof InteractionRequiredAuthError) {
+          instance
+            .acquireTokenPopup(accessTokenRequest)
+            .then(function (accessTokenResponse) {
+              // Acquire token interactive success
+              const accessToken = accessTokenResponse.accessToken;
+              // Call your API with token
+              axios.get('https://graph.microsoft.com/v1.0/me/calendar', {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  // Prefer: 'outlook.timezone="Indochina Time"',
+                },
+              });
+            })
+            .catch(function (error) {
+              // Acquire token interactive failure
+              console.log(error);
+            });
+        }
+        console.log(error);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSubmit = useCallback(() => {
     instance
       .acquireTokenSilent(accessTokenRequest)
